@@ -95,6 +95,8 @@ impl Wiimote {
         match a {
             Action::SpeakerEnable(enable) => self.set_enabled(consts::SPEAKER_ENABLE, enable),
             Action::SpeakerMute(enable) => self.set_enabled(consts::SPEAKER_MUTE, enable),
+            Action::IRCameraEnable(enable) => self.set_enabled(consts::IR_CAMERA_ENABLE, enable),
+            Action::PlayerLeds(mask) => self.write_inner(&mut [0x11, mask << 4]),
             Action::SpeakerData(data) => {
                 let mut to_send = [0; 22];
                 to_send[0] = consts::SPEAKER_DATA;
@@ -113,6 +115,8 @@ pub enum Report {
 }
 #[derive(Debug)]
 pub enum Action {
+    IRCameraEnable(bool),
+    PlayerLeds(u8),
     SpeakerEnable(bool),
     SpeakerMute(bool),
     SpeakerData([u8; 20]),
