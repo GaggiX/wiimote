@@ -126,11 +126,11 @@ impl Wiimote {
                     self.set_enabled(TY_IR_CAMERA_PIXEL_CLOCK_ENABLE, true);
                     self.set_enabled(TY_IR_CAMERA_CHIP_ENABLE, true);
                     self.write_registers(REG_IR, &[0x01]);
-                    sleep(Duration::from_millis(50));
+                    sleep(Duration::from_millis(50)); // wiibrew wiki says this might help...
                     self.write_registers(REG_IR_SENS_BLOCK1, &sens.0);
                     self.write_registers(REG_IR_SENS_BLOCK2, &sens.1);
                     self.write_registers(REG_IR_MODE, &[mode as u8]);
-                    self.write_registers(REG_IR, &[0x80]);
+                    self.write_registers(REG_IR, &[0x08]);
                 } else {
                     self.set_enabled(TY_IR_CAMERA_CHIP_ENABLE, false);
                     self.set_enabled(TY_IR_CAMERA_PIXEL_CLOCK_ENABLE, false);
