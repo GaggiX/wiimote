@@ -4,7 +4,7 @@
     Copyright (C) 2023 metamuffin <metamuffin@disroot.org>
 */
 use std::{thread::sleep, time::Duration};
-use wiimote_stuff::{Action, Wiimote};
+use wiimote_rs::{Action, Wiimote};
 
 fn main() {
     env_logger::init_from_env("LOG");

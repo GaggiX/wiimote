@@ -181,7 +181,7 @@ pub enum ReportingMode {
     ButtonsIR10Ext9 = TY_CORE_BUTTONS_IR10_EXTENSION9,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Acceleration {
     pub x: i16,
     pub y: i16,
@@ -198,14 +198,14 @@ impl Acceleration {
 }
 
 #[repr(u8)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum IRMode {
     Basic = 1,
     Extended = 3,
     Full = 5,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct IRObject {
     pub x: u16,
     pub y: u16,
