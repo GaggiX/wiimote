@@ -1,10 +1,9 @@
 [package]
-name = "wiipen"
+name = "wiimote-stuff"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "1.32.0", features = ["full"] }
-bluer = { version = "0.16.0", features = ["bluetoothd", "l2cap"] }
+hidapi = "2.4.1"
 log = "0.4.20"
 env_logger = "0.10.0"
