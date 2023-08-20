@@ -1,0 +1,10 @@
+[package]
+name = "wiipen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.32.0", features = ["full"] }
+bluer = { version = "0.16.0", features = ["bluetoothd", "l2cap"] }
+log = "0.4.20"
+env_logger = "0.10.0"
