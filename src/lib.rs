@@ -52,6 +52,12 @@ impl Wiimote {
         let size = self.device.read(&mut buf).unwrap();
         trace!("recv {:?}", &buf[..size]);
         match buf[0] {
+            consts::CORE_BUTTONS_IR10_EXTENSION9 => {
+                out.push_back(Report::Buttons(ButtonState::from_flags([buf[1], buf[2]])));
+                out.push_back(Report::IRDetection(IRObject::from_basic(
+                    buf[3..13].try_into().unwrap(),
+                )))
+            }
             consts::CORE_BUTTONS_ACCELEROMETER_IR10_EXTENSION6 => {
                 out.push_back(Report::Buttons(ButtonState::from_flags([buf[1], buf[2]])));
                 out.push_back(Report::Acceleration(Acceleration::from_report(&buf)));
@@ -110,14 +116,27 @@ impl Wiimote {
             Action::SpeakerEnable(enable) => self.set_enabled(consts::SPEAKER_ENABLE, enable),
             Action::SpeakerMute(enable) => self.set_enabled(consts::SPEAKER_MUTE, enable),
             Action::IRCameraEnable(enable) => {
-                self.set_enabled(consts::IR_CAMERA_PIXEL_CLOCK_ENABLE, enable.is_some());
-                self.set_enabled(consts::IR_CAMERA_CHIP_ENABLE, enable.is_some());
                 if let Some(mode) = enable {
+                    let d = Duration::from_millis(50);
+                    let sens = consts::IR_SENSITIVITY_MAX;
+                    sleep(d);
+                    self.set_enabled(consts::IR_CAMERA_PIXEL_CLOCK_ENABLE, true);
+                    sleep(d);
+                    self.set_enabled(consts::IR_CAMERA_CHIP_ENABLE, true);
+                    sleep(d);
                     self.write_registers(0xb00030, &[0x80]);
-                    self.write_registers(0xb00000, &consts::IR_SENSITIVITY_LEVEL_3[0..9]);
-                    self.write_registers(0xb0001a, &consts::IR_SENSITIVITY_LEVEL_3[9..11]);
+                    sleep(d);
+                    self.write_registers(0xb00000, &sens[0..9]);
+                    sleep(d);
+                    self.write_registers(0xb0001a, &sens[9..11]);
+                    sleep(d);
                     self.write_registers(0xb00033, &[mode as u8]);
+                    sleep(d);
                     self.write_registers(0xb00030, &[0x80]);
+                    sleep(d);
+                } else {
+                    self.set_enabled(consts::IR_CAMERA_CHIP_ENABLE, false);
+                    self.set_enabled(consts::IR_CAMERA_PIXEL_CLOCK_ENABLE, false);
                 }
             }
             Action::PlayerLeds(mask) => self.write_inner(&mut [0x11, mask << 4]),
@@ -257,8 +276,14 @@ impl ButtonState {
     }
 }
 pub mod consts {
+    pub const IR_SENSITIVITY_MAX: [u8; 11] = [
+        00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x0C, 0x00, 0x00,
+    ];
     pub const IR_SENSITIVITY_LEVEL_3: [u8; 11] = [
         0x02, 0x00, 0x00, 0x71, 0x01, 0x00, 0xaa, 0x00, 0x64, 0x63, 0x03,
+    ];
+    pub const IR_SENSITIVITY_LEVEL_5: [u8; 11] = [
+        0x07, 0x00, 0x00, 0x71, 0x01, 0x00, 0x72, 0x00, 0x20, 0x1f, 0x03,
     ];
 
     pub const RUMBLE: u8 = 0x10;
