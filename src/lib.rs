@@ -4,12 +4,21 @@
     Copyright (C) 2023 metamuffin <metamuffin@disroot.org>
 */
 use hidapi::HidDevice;
-use log::{debug, info, trace};
-use std::{thread::sleep, time::Duration};
+use log::{debug, info, trace, warn};
+use std::{
+    collections::VecDeque,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        RwLock,
+    },
+    thread::sleep,
+    time::Duration,
+};
 
 pub struct Wiimote {
     device: HidDevice,
-    rumble: bool,
+    rumble: AtomicBool,
+    out: RwLock<VecDeque<Report>>,
 }
 
 impl Wiimote {
@@ -29,18 +38,35 @@ impl Wiimote {
         let device = api.open(0x057e, 0x0306).unwrap();
         Self {
             device,
-            rumble: false,
+            rumble: false.into(),
+            out: VecDeque::new().into(),
         }
     }
 
-    pub fn read(&self) {
+    pub fn read(&self) -> Option<Report> {
+        let mut out = self.out.write().unwrap();
+        if !out.is_empty() {
+            return out.pop_front();
+        }
         let mut buf = [0u8; 1024];
         let size = self.device.read(&mut buf).unwrap();
         debug!("recv {:?}", &buf[..size]);
+        match buf[0] {
+            consts::CORE_BUTTONS_ACCELEROMETER => {
+                out.push_back(Report::Buttons(ButtonState::from_flags([buf[1], buf[2]])));
+            }
+            consts::CORE_BUTTONS => {
+                out.push_back(Report::Buttons(ButtonState::from_flags([buf[1], buf[2]])));
+            }
+            x => {
+                warn!("unknown report type: {x:02x}");
+            }
+        }
+        out.pop_front()
     }
 
     fn write_inner(&self, bytes: &mut [u8]) {
-        if self.rumble {
+        if self.rumble.load(Ordering::Relaxed) {
             bytes[1] = bytes[1] | 1;
         } else {
             bytes[1] = bytes[1] & !1;
@@ -81,11 +107,48 @@ impl Wiimote {
     }
 }
 
-pub enum Report {}
+#[derive(Debug)]
+pub enum Report {
+    Buttons(ButtonState),
+}
+#[derive(Debug)]
 pub enum Action {
     SpeakerEnable(bool),
     SpeakerMute(bool),
     SpeakerData([u8; 20]),
+}
+
+#[derive(Debug)]
+pub struct ButtonState {
+    pub d_pad_left: bool,
+    pub d_pad_right: bool,
+    pub d_pad_down: bool,
+    pub d_pad_up: bool,
+    pub plus: bool,
+    pub two: bool,
+    pub one: bool,
+    pub b: bool,
+    pub a: bool,
+    pub minus: bool,
+    pub home: bool,
+}
+impl ButtonState {
+    #[rustfmt::skip]
+    pub fn from_flags([x, y]: [u8; 2]) -> Self {
+        Self {
+            d_pad_left:  x & 0b00000001 != 0,
+            d_pad_right: x & 0b00000010 != 0,
+            d_pad_down:  x & 0b00000100 != 0,
+            d_pad_up:    x & 0b00001000 != 0,
+            plus:        x & 0b00010000 != 0,
+            two:         y & 0b00000001 != 0,
+            one:         y & 0b00000010 != 0,
+            b:           y & 0b00000100 != 0,
+            a:           y & 0b00001000 != 0,
+            minus:       y & 0b00010000 != 0,
+            home:        y & 0b10000000 != 0,
+        }
+    }
 }
 
 mod consts {
