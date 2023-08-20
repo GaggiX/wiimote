@@ -8,6 +8,7 @@ use wiimote_stuff::{Action, IRMode, Report, ReportingMode, Wiimote};
 fn main() {
     env_logger::init_from_env("LOG");
     let w = Wiimote::open();
+    w.write(Action::IRCameraEnable(None));
     w.write(Action::IRCameraEnable(Some(IRMode::Basic)));
     w.write(Action::SetReporting(ReportingMode::ButtonsIR10Ext9));
     loop {

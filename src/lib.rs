@@ -118,7 +118,7 @@ impl Wiimote {
             Action::IRCameraEnable(enable) => {
                 if let Some(mode) = enable {
                     let d = Duration::from_millis(50);
-                    let sens = consts::IR_SENSITIVITY_MAX;
+                    let sens = consts::IR_SENSITIVITY_LEVEL_3;
                     sleep(d);
                     self.set_enabled(consts::IR_CAMERA_PIXEL_CLOCK_ENABLE, true);
                     sleep(d);
@@ -193,8 +193,8 @@ impl Acceleration {
     pub fn from_report(r: &[u8]) -> Self {
         Acceleration {
             x: (r[3] as i16 - 0x80) * 2 + (r[1] & 0b01100000) as i16 >> 5,
-            y: (r[4] as i16 - 0x80) * 2 + (r[1] & 0b00100000) as i16 >> 5,
-            z: (r[5] as i16 - 0x80) * 2 + (r[1] & 0b01000000) as i16 >> 6,
+            y: (r[4] as i16 - 0x80) * 2 + (r[2] & 0b00100000) as i16 >> 5,
+            z: (r[5] as i16 - 0x80) * 2 + (r[2] & 0b01000000) as i16 >> 6,
         }
     }
 }
