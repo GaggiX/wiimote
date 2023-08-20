@@ -3,6 +3,7 @@
     which is licensed under the GNU Affero General Public License (version 3); see /COPYING.
     Copyright (C) 2023 metamuffin <metamuffin@disroot.org>
 */
+use consts::*;
 use hidapi::HidDevice;
 use log::{debug, info, trace, warn};
 use std::{
@@ -52,31 +53,31 @@ impl Wiimote {
         let size = self.device.read(&mut buf).unwrap();
         trace!("recv {:?}", &buf[..size]);
         match buf[0] {
-            consts::CORE_BUTTONS_IR10_EXTENSION9 => {
+            TY_CORE_BUTTONS_IR10_EXTENSION9 => {
                 out.push_back(Report::Buttons(ButtonState::from_flags([buf[1], buf[2]])));
                 out.push_back(Report::IRDetection(IRObject::from_basic(
                     buf[3..13].try_into().unwrap(),
                 )))
             }
-            consts::CORE_BUTTONS_ACCELEROMETER_IR10_EXTENSION6 => {
+            TY_CORE_BUTTONS_ACCELEROMETER_IR10_EXTENSION6 => {
                 out.push_back(Report::Buttons(ButtonState::from_flags([buf[1], buf[2]])));
                 out.push_back(Report::Acceleration(Acceleration::from_report(&buf)));
                 out.push_back(Report::IRDetection(IRObject::from_basic(
                     buf[6..16].try_into().unwrap(),
                 )))
             }
-            consts::CORE_BUTTONS_ACCELEROMETER => {
+            TY_CORE_BUTTONS_ACCELEROMETER => {
                 out.push_back(Report::Buttons(ButtonState::from_flags([buf[1], buf[2]])));
                 out.push_back(Report::Acceleration(Acceleration::from_report(&buf)))
             }
-            consts::CORE_BUTTONS => {
+            TY_CORE_BUTTONS => {
                 out.push_back(Report::Buttons(ButtonState::from_flags([buf[1], buf[2]])));
             }
-            consts::STATUS_INFORMATION => {
+            TY_STATUS_INFORMATION => {
                 out.push_back(Report::LedState(buf[3] >> 4));
             }
-            consts::READ_MEMORY_AND_REGISTERS_DATA => {}
-            consts::RESULT => {}
+            TY_READ_MEMORY_AND_REGISTERS_DATA => {}
+            TY_RESULT => {}
             x => {
                 warn!("unknown report type: {x:02x}");
             }
@@ -96,7 +97,7 @@ impl Wiimote {
 
     pub fn write_registers(&self, addr: u32, data: &[u8]) {
         let mut bytes = [0; 22];
-        bytes[0] = consts::WRITE_MEMORY_AND_REGISTERS;
+        bytes[0] = TY_WRITE_MEMORY_AND_REGISTERS;
         bytes[1] = 0x04;
         bytes[2..5].copy_from_slice(&addr.to_be_bytes()[1..]);
         let data_len = 16.min(data.len());
@@ -113,36 +114,32 @@ impl Wiimote {
 
     pub fn write(&self, a: Action) {
         match a {
-            Action::SpeakerEnable(enable) => self.set_enabled(consts::SPEAKER_ENABLE, enable),
-            Action::SpeakerMute(enable) => self.set_enabled(consts::SPEAKER_MUTE, enable),
+            Action::RumbleEnable(enable) => {
+                self.rumble.store(enable, Ordering::Relaxed);
+                self.write_inner(&mut [0x10, enable as u8])
+            }
+            Action::SpeakerEnable(enable) => self.set_enabled(TY_SPEAKER_ENABLE, enable),
+            Action::SpeakerMute(enable) => self.set_enabled(TY_SPEAKER_MUTE, enable),
             Action::IRCameraEnable(enable) => {
                 if let Some(mode) = enable {
-                    let d = Duration::from_millis(50);
-                    let sens = consts::IR_SENSITIVITY_LEVEL_3;
-                    sleep(d);
-                    self.set_enabled(consts::IR_CAMERA_PIXEL_CLOCK_ENABLE, true);
-                    sleep(d);
-                    self.set_enabled(consts::IR_CAMERA_CHIP_ENABLE, true);
-                    sleep(d);
-                    self.write_registers(0xb00030, &[0x80]);
-                    sleep(d);
-                    self.write_registers(0xb00000, &sens[0..9]);
-                    sleep(d);
-                    self.write_registers(0xb0001a, &sens[9..11]);
-                    sleep(d);
-                    self.write_registers(0xb00033, &[mode as u8]);
-                    sleep(d);
-                    self.write_registers(0xb00030, &[0x80]);
-                    sleep(d);
+                    let sens = IR_SENS_LEVEL3;
+                    self.set_enabled(TY_IR_CAMERA_PIXEL_CLOCK_ENABLE, true);
+                    self.set_enabled(TY_IR_CAMERA_CHIP_ENABLE, true);
+                    self.write_registers(REG_IR, &[0x01]);
+                    sleep(Duration::from_millis(50));
+                    self.write_registers(REG_IR_SENS_BLOCK1, &sens.0);
+                    self.write_registers(REG_IR_SENS_BLOCK2, &sens.1);
+                    self.write_registers(REG_IR_MODE, &[mode as u8]);
+                    self.write_registers(REG_IR, &[0x80]);
                 } else {
-                    self.set_enabled(consts::IR_CAMERA_CHIP_ENABLE, false);
-                    self.set_enabled(consts::IR_CAMERA_PIXEL_CLOCK_ENABLE, false);
+                    self.set_enabled(TY_IR_CAMERA_CHIP_ENABLE, false);
+                    self.set_enabled(TY_IR_CAMERA_PIXEL_CLOCK_ENABLE, false);
                 }
             }
             Action::PlayerLeds(mask) => self.write_inner(&mut [0x11, mask << 4]),
             Action::SpeakerData(data) => {
                 let mut to_send = [0; 22];
-                to_send[0] = consts::SPEAKER_DATA;
+                to_send[0] = TY_SPEAKER_DATA;
                 to_send[1] = 20 << 3;
                 to_send[2..].copy_from_slice(&data);
                 self.write_inner(&mut to_send);
@@ -165,6 +162,7 @@ pub enum Action {
     SetReporting(ReportingMode),
     IRCameraEnable(Option<IRMode>),
     PlayerLeds(u8),
+    RumbleEnable(bool),
     SpeakerEnable(bool),
     SpeakerMute(bool),
     SpeakerData([u8; 20]),
@@ -173,14 +171,14 @@ pub enum Action {
 #[repr(u8)]
 #[derive(Debug)]
 pub enum ReportingMode {
-    Buttons = consts::CORE_BUTTONS,
-    ButtonsAccel = consts::CORE_BUTTONS_ACCELEROMETER,
-    ButtonsAccelExt16 = consts::CORE_BUTTONS_ACCELEROMETER_EXTENSION16,
-    ButtonsAccelIR10Ext6 = consts::CORE_BUTTONS_ACCELEROMETER_IR10_EXTENSION6,
-    ButtonsAccelIR12 = consts::CORE_BUTTONS_ACCELEROMETER_IR12,
-    ButtonsExt19 = consts::CORE_BUTTONS_EXTENSION19,
-    ButtonsExt8 = consts::CORE_BUTTONS_EXTENSION8,
-    ButtonsIR10Ext9 = consts::CORE_BUTTONS_IR10_EXTENSION9,
+    Buttons = TY_CORE_BUTTONS,
+    ButtonsAccel = TY_CORE_BUTTONS_ACCELEROMETER,
+    ButtonsAccelExt16 = TY_CORE_BUTTONS_ACCELEROMETER_EXTENSION16,
+    ButtonsAccelIR10Ext6 = TY_CORE_BUTTONS_ACCELEROMETER_IR10_EXTENSION6,
+    ButtonsAccelIR12 = TY_CORE_BUTTONS_ACCELEROMETER_IR12,
+    ButtonsExt19 = TY_CORE_BUTTONS_EXTENSION19,
+    ButtonsExt8 = TY_CORE_BUTTONS_EXTENSION8,
+    ButtonsIR10Ext9 = TY_CORE_BUTTONS_IR10_EXTENSION9,
 }
 
 #[derive(Debug)]
@@ -275,40 +273,47 @@ impl ButtonState {
         }
     }
 }
-pub mod consts {
-    pub const IR_SENSITIVITY_MAX: [u8; 11] = [
-        00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x0C, 0x00, 0x00,
-    ];
-    pub const IR_SENSITIVITY_LEVEL_3: [u8; 11] = [
-        0x02, 0x00, 0x00, 0x71, 0x01, 0x00, 0xaa, 0x00, 0x64, 0x63, 0x03,
-    ];
-    pub const IR_SENSITIVITY_LEVEL_5: [u8; 11] = [
-        0x07, 0x00, 0x00, 0x71, 0x01, 0x00, 0x72, 0x00, 0x20, 0x1f, 0x03,
-    ];
 
-    pub const RUMBLE: u8 = 0x10;
-    pub const PLAYER_LEDS: u8 = 0x11;
-    pub const DATA_REPORTING_MODE: u8 = 0x12;
-    pub const IR_CAMERA_PIXEL_CLOCK_ENABLE: u8 = 0x13;
-    pub const SPEAKER_ENABLE: u8 = 0x14;
-    pub const STATUS_INFORMATION_REQUEST: u8 = 0x15;
-    pub const WRITE_MEMORY_AND_REGISTERS: u8 = 0x16;
-    pub const READ_MEMORY_AND_REGISTERS: u8 = 0x17;
-    pub const SPEAKER_DATA: u8 = 0x18;
-    pub const SPEAKER_MUTE: u8 = 0x19;
-    pub const IR_CAMERA_CHIP_ENABLE: u8 = 0x1a;
-    pub const STATUS_INFORMATION: u8 = 0x20;
-    pub const READ_MEMORY_AND_REGISTERS_DATA: u8 = 0x21;
-    pub const RESULT: u8 = 0x22;
-    pub const CORE_BUTTONS: u8 = 0x30;
-    pub const CORE_BUTTONS_ACCELEROMETER: u8 = 0x31;
-    pub const CORE_BUTTONS_EXTENSION8: u8 = 0x32;
-    pub const CORE_BUTTONS_ACCELEROMETER_IR12: u8 = 0x33;
-    pub const CORE_BUTTONS_EXTENSION19: u8 = 0x34;
-    pub const CORE_BUTTONS_ACCELEROMETER_EXTENSION16: u8 = 0x35;
-    pub const CORE_BUTTONS_IR10_EXTENSION9: u8 = 0x36;
-    pub const CORE_BUTTONS_ACCELEROMETER_IR10_EXTENSION6: u8 = 0x37;
-    pub const EXTENSION21: u8 = 0x3d;
-    pub const INTERLEAVED0: u8 = 0x3e;
-    pub const INTERLEAVED1: u8 = 0x3f;
+pub mod consts {
+    pub const REG_IR: u32 = 0xb00030;
+    pub const REG_IR_SENS_BLOCK1: u32 = 0xb00000;
+    pub const REG_IR_SENS_BLOCK2: u32 = 0xb0001a;
+    pub const REG_IR_MODE: u32 = 0xb00033;
+
+    pub const IR_SENS_LEVEL1: ([u8; 9], [u8; 2]) =
+        (*b"\x02\x00\x00\x71\x01\x00\x64\x00\xfe", *b"\xfd\x05");
+    pub const IR_SENS_LEVEL2: ([u8; 9], [u8; 2]) =
+        (*b"\x02\x00\x00\x71\x01\x00\x96\x00\xb4", *b"\xb3\x04");
+    pub const IR_SENS_LEVEL3: ([u8; 9], [u8; 2]) =
+        (*b"\x02\x00\x00\x71\x01\x00\xaa\x00\x64", *b"\x63\x03");
+    pub const IR_SENS_LEVEL4: ([u8; 9], [u8; 2]) =
+        (*b"\x02\x00\x00\x71\x01\x00\xc8\x00\x36", *b"\x35\x03");
+    pub const IR_SENS_LEVEL5: ([u8; 9], [u8; 2]) =
+        (*b"\x07\x00\x00\x71\x01\x00\x72\x00\x20", *b"\x1f\x03");
+
+    pub const TY_RUMBLE: u8 = 0x10;
+    pub const TY_PLAYER_LEDS: u8 = 0x11;
+    pub const TY_DATA_REPORTING_MODE: u8 = 0x12;
+    pub const TY_IR_CAMERA_PIXEL_CLOCK_ENABLE: u8 = 0x13;
+    pub const TY_SPEAKER_ENABLE: u8 = 0x14;
+    pub const TY_STATUS_INFORMATION_REQUEST: u8 = 0x15;
+    pub const TY_WRITE_MEMORY_AND_REGISTERS: u8 = 0x16;
+    pub const TY_READ_MEMORY_AND_REGISTERS: u8 = 0x17;
+    pub const TY_SPEAKER_DATA: u8 = 0x18;
+    pub const TY_SPEAKER_MUTE: u8 = 0x19;
+    pub const TY_IR_CAMERA_CHIP_ENABLE: u8 = 0x1a;
+    pub const TY_STATUS_INFORMATION: u8 = 0x20;
+    pub const TY_READ_MEMORY_AND_REGISTERS_DATA: u8 = 0x21;
+    pub const TY_RESULT: u8 = 0x22;
+    pub const TY_CORE_BUTTONS: u8 = 0x30;
+    pub const TY_CORE_BUTTONS_ACCELEROMETER: u8 = 0x31;
+    pub const TY_CORE_BUTTONS_EXTENSION8: u8 = 0x32;
+    pub const TY_CORE_BUTTONS_ACCELEROMETER_IR12: u8 = 0x33;
+    pub const TY_CORE_BUTTONS_EXTENSION19: u8 = 0x34;
+    pub const TY_CORE_BUTTONS_ACCELEROMETER_EXTENSION16: u8 = 0x35;
+    pub const TY_CORE_BUTTONS_IR10_EXTENSION9: u8 = 0x36;
+    pub const TY_CORE_BUTTONS_ACCELEROMETER_IR10_EXTENSION6: u8 = 0x37;
+    pub const TY_EXTENSION21: u8 = 0x3d;
+    pub const TY_INTERLEAVED0: u8 = 0x3e;
+    pub const TY_INTERLEAVED1: u8 = 0x3f;
 }
