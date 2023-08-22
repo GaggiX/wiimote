@@ -121,8 +121,15 @@ impl Wiimote {
             Action::SpeakerEnable(enable) => self.set_enabled(TY_SPEAKER_ENABLE, enable),
             Action::SpeakerMute(enable) => self.set_enabled(TY_SPEAKER_MUTE, enable),
             Action::IRCameraEnable(enable) => {
-                if let Some(mode) = enable {
-                    let sens = IR_SENS_LEVEL3;
+                if let Some((mode, sens)) = enable {
+                    let sens = match sens {
+                        Sensitivity::Level1 => consts::IR_SENS_LEVEL1,
+                        Sensitivity::Level2 => consts::IR_SENS_LEVEL2,
+                        Sensitivity::Level3 => consts::IR_SENS_LEVEL3,
+                        Sensitivity::Level4 => consts::IR_SENS_LEVEL4,
+                        Sensitivity::Level5 => consts::IR_SENS_LEVEL5,
+                        Sensitivity::Maximum => todo!(),
+                    };
                     self.set_enabled(TY_IR_CAMERA_PIXEL_CLOCK_ENABLE, true);
                     self.set_enabled(TY_IR_CAMERA_CHIP_ENABLE, true);
                     self.write_registers(REG_IR, &[0x01]);
@@ -160,12 +167,22 @@ pub enum Report {
 #[derive(Debug)]
 pub enum Action {
     SetReporting(ReportingMode),
-    IRCameraEnable(Option<IRMode>),
+    IRCameraEnable(Option<(IRMode, Sensitivity)>),
     PlayerLeds(u8),
     RumbleEnable(bool),
     SpeakerEnable(bool),
     SpeakerMute(bool),
     SpeakerData([u8; 20]),
+}
+
+#[derive(Debug)]
+pub enum Sensitivity {
+    Level1,
+    Level2,
+    Level3,
+    Level4,
+    Level5,
+    Maximum,
 }
 
 #[repr(u8)]
@@ -241,7 +258,7 @@ impl IRObject {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ButtonState {
     pub d_pad_left: bool,
     pub d_pad_right: bool,
