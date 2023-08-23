@@ -91,16 +91,25 @@ pub enum IRSensitivity {
     CustomMaximum,
 }
 
+/// Defines which data should be reported to the host.
 #[repr(u8)]
 #[derive(Debug)]
 pub enum ReportingMode {
+    /// Core Buttons
     Buttons = TY_CORE_BUTTONS,
+    /// Core Buttons and Accelerometer
     ButtonsAccel = TY_CORE_BUTTONS_ACCELEROMETER,
+    /// Core Buttons and Accelerometer with 16 Extension Bytes
     ButtonsAccelExt16 = TY_CORE_BUTTONS_ACCELEROMETER_EXTENSION16,
+    /// Core Buttons and Accelerometer with 10 IR bytes and 6 Extension Bytes
     ButtonsAccelIR10Ext6 = TY_CORE_BUTTONS_ACCELEROMETER_IR10_EXTENSION6,
+    /// Core Buttons and Accelerometer with 12 IR bytes
     ButtonsAccelIR12 = TY_CORE_BUTTONS_ACCELEROMETER_IR12,
+    /// Core Buttons with 19 Extension bytes
     ButtonsExt19 = TY_CORE_BUTTONS_EXTENSION19,
+    /// Core Buttons with 8 Extension bytes
     ButtonsExt8 = TY_CORE_BUTTONS_EXTENSION8,
+    /// Core Buttons with 10 IR bytes and 9 Extension Bytes
     ButtonsIR10Ext9 = TY_CORE_BUTTONS_IR10_EXTENSION9,
 }
 
@@ -119,10 +128,12 @@ pub enum IRMode {
     Full = 5,
 }
 
+/// Represents a detection by the IR camera.
 #[derive(Debug, Clone, Copy)]
 pub struct IRObject {
     pub x: u16,
     pub y: u16,
+    /// What this exactly means depends on camera mode
     pub size_or_intensity: u8,
 }
 
