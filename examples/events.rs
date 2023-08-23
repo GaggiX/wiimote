@@ -3,7 +3,7 @@
     which is licensed under the GNU Affero General Public License (version 3); see /COPYING.
     Copyright (C) 2023 metamuffin <metamuffin@disroot.org>
 */
-use wiimote_rs::{Action, IRMode, ReportingMode, Sensitivity, Wiimote};
+use wiimote_rs::{Action, IRMode, ReportingMode, IRSensitivity, Wiimote};
 
 fn main() {
     env_logger::init_from_env("LOG");
@@ -14,7 +14,7 @@ fn main() {
             "basic_ir" => {
                 w.write(Action::IRCameraEnable(Some((
                     IRMode::Basic,
-                    Sensitivity::Level3,
+                    IRSensitivity::Level3,
                 ))));
                 w.write(Action::SetReporting(ReportingMode::ButtonsAccelIR10Ext6));
             }

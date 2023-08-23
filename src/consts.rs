@@ -1,3 +1,6 @@
+pub const HID_VENDOR: u16 = 0x057e;
+pub const HID_PRODUCT: u16 = 0x0306;
+
 pub const REG_IR: u32 = 0xb00030;
 pub const REG_IR_SENS_BLOCK1: u32 = 0xb00000;
 pub const REG_IR_SENS_BLOCK2: u32 = 0xb0001a;
@@ -13,10 +16,17 @@ pub const IR_SENS_LEVEL4: ([u8; 9], [u8; 2]) =
     (*b"\x02\x00\x00\x71\x01\x00\xc8\x00\x36", *b"\x35\x03");
 pub const IR_SENS_LEVEL5: ([u8; 9], [u8; 2]) =
     (*b"\x07\x00\x00\x71\x01\x00\x72\x00\x20", *b"\x1f\x03");
+pub const IR_SENS_CUSTOM_HIGH: ([u8; 9], [u8; 2]) =
+    (*b"\x07\x00\x00\x71\x01\x00\x72\x00\x20", *b"\x1f\x03");
+pub const IR_SENS_CUSTOM_MAX: ([u8; 9], [u8; 2]) =
+    (*b"\x07\x00\x00\x71\x01\x00\x72\x00\x20", *b"\x1f\x03");
+
+pub const VA_FEATURE_ENABLE: u8 = 0x04;
+pub const VA_FEATURE_DISABLE: u8 = 0x00;
 
 pub const TY_RUMBLE: u8 = 0x10;
 pub const TY_PLAYER_LEDS: u8 = 0x11;
-pub const TY_DATA_REPORTING_MODE: u8 = 0x12;
+pub const TY_SET_REPORTING: u8 = 0x12;
 pub const TY_IR_CAMERA_PIXEL_CLOCK_ENABLE: u8 = 0x13;
 pub const TY_SPEAKER_ENABLE: u8 = 0x14;
 pub const TY_STATUS_INFORMATION_REQUEST: u8 = 0x15;

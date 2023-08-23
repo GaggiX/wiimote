@@ -9,6 +9,7 @@ Rust library/driver for Nintendo Wii Remotes (aka. Wiimote).
 - Rumble
 - Player LEDs
 - IR Camera
+- Accelerometer
 
 ## Not yet implemented features
 
