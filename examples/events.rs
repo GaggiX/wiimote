@@ -3,7 +3,7 @@
     which is licensed under the GNU Affero General Public License (version 3); see /COPYING.
     Copyright (C) 2023 metamuffin <metamuffin@disroot.org>
 */
-use wiimote_rs::{Action, IRMode, ReportingMode, Wiimote};
+use wiimote_rs::{Action, IRMode, ReportingMode, Sensitivity, Wiimote};
 
 fn main() {
     env_logger::init_from_env("LOG");
@@ -12,7 +12,10 @@ fn main() {
     if let Some(a) = a {
         match a.as_str() {
             "basic_ir" => {
-                w.write(Action::IRCameraEnable(Some(IRMode::Basic)));
+                w.write(Action::IRCameraEnable(Some((
+                    IRMode::Basic,
+                    Sensitivity::Level3,
+                ))));
                 w.write(Action::SetReporting(ReportingMode::ButtonsAccelIR10Ext6));
             }
             "accel" => {
