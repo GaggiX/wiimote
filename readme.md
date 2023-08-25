@@ -13,9 +13,12 @@ Rust library/driver for Nintendo Wii Remotes (aka. Wiimote).
 
 ## Not yet implemented features
 
+- Status reports
 - Extensions
   - Nunchuk
-- Motionplus
+  - Motionplus
+- Check compatibility of reporting mode and enabled peripherals or abstract that
+  away completely
 
 ## Examples
 
@@ -23,7 +26,7 @@ See [`examples`](./examples).
 
 ## Licence and thanks
 
-This project is licenced with the GNU AGPL version 3 only.
+This project is licenced with the GNU AGPL version 3.0 only.
 
 Thanks to [WiiBrew](https://wiibrew.org/) for providing excellent documentation
 of the protocol.
