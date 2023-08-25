@@ -38,7 +38,7 @@ impl Wiimote {
             return None;
         }
         let device = api.open(HID_VENDOR, HID_PRODUCT).unwrap();
-        return Some(device);
+        Some(device)
     }
     /// Creates wiimote abstraction over a HidDevice (which should be a wiimote)
     pub fn from_device(device: HidDevice) -> Self {

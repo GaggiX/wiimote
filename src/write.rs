@@ -6,9 +6,9 @@ impl Wiimote {
     /// Sends a packet to the wiimote and makes sure that we dont influence rumble :)
     fn write_inner(&self, bytes: &mut [u8]) {
         if self.rumble.load(Ordering::Relaxed) {
-            bytes[1] = bytes[1] | 1;
+            bytes[1] |= 1;
         } else {
-            bytes[1] = bytes[1] & !1;
+            bytes[1] &= !1;
         }
         trace!("send {bytes:02x?}");
         self.device.write(bytes).unwrap();
@@ -23,9 +23,8 @@ impl Wiimote {
         let data_len = 16.min(data.len());
         bytes[5] = data_len as u8;
         bytes[6..6 + data_len].copy_from_slice(&data[0..data_len]);
-        let ret = self.write_inner(&mut bytes);
+        self.write_inner(&mut bytes);
         sleep(Duration::from_millis(10));
-        ret
     }
 
     /// Enable/Disable a feature

@@ -103,9 +103,9 @@ impl Acceleration {
     /// Parse acceleration from report format
     pub fn from_report(r: &[u8]) -> Self {
         Acceleration {
-            x: (r[3] as i16 - 0x80) * 2 + (r[1] & 0b01100000) as i16 >> 5,
-            y: (r[4] as i16 - 0x80) * 2 + (r[2] & 0b00100000) as i16 >> 5,
-            z: (r[5] as i16 - 0x80) * 2 + (r[2] & 0b01000000) as i16 >> 6,
+            x: ((r[3] as i16 - 0x80) * 4) + ((r[1] & 0b01100000) as i16 >> 5),
+            y: ((r[4] as i16 - 0x80) * 4) + ((r[2] & 0b00100000) as i16 >> 5),
+            z: ((r[5] as i16 - 0x80) * 4) + ((r[2] & 0b01000000) as i16 >> 6),
         }
     }
 }
