@@ -4,7 +4,7 @@
     Copyright (C) 2023 metamuffin <metamuffin@disroot.org>
 */
 use std::io::{stdin, Read};
-use wiimote_rs::{Action, Wiimote};
+use wiimote::{Action, Wiimote};
 
 fn main() {
     env_logger::init_from_env("LOG");

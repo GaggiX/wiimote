@@ -177,7 +177,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wiimote-rs"
+name = "wiimote"
 version = "0.1.0"
 dependencies = [
  "env_logger",

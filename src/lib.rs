@@ -15,6 +15,7 @@ use std::{
     sync::{atomic::AtomicBool, RwLock},
 };
 
+/// Abstraction over the Wiimote HID
 pub struct Wiimote {
     device: HidDevice,
     rumble: AtomicBool,

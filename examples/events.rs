@@ -3,7 +3,7 @@
     which is licensed under the GNU Affero General Public License (version 3); see /COPYING.
     Copyright (C) 2023 metamuffin <metamuffin@disroot.org>
 */
-use wiimote_rs::{Action, IRMode, ReportingMode, IRSensitivity, Wiimote};
+use wiimote::{Action, IRMode, ReportingMode, IRSensitivity, Wiimote};
 
 fn main() {
     env_logger::init_from_env("LOG");
