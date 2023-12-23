@@ -1,5 +1,4 @@
 pub const HID_VENDOR: u16 = 0x057e;
-pub const HID_PRODUCT: u16 = 0x0306;
 
 pub const REG_IR: u32 = 0xb00030;
 pub const REG_IR_SENS_BLOCK1: u32 = 0xb00000;

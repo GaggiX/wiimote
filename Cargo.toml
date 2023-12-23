@@ -1,12 +1,20 @@
 [package]
-name = "wiimote"
 description = "Wiimote library/driver for Rust via hidapi"
-repository = "https://codeberg.org/metamuffin/wiimote-rs"
-version = "0.1.0"
 edition = "2021"
+keywords = ["gamedev", "wiimote"]
 license = "AGPL-3.0"
 readme = "readme.md"
-keywords = ["gamedev", "wiimote"]
+name = "boh"
+repository = "https://codeberg.org/metamuffin/wiimote-rs"
+version = "0.1.0"
+
+[lib]
+name = "wiimote"
+path = "src/lib.rs"
+
+[[bin]]
+name = "test_bin"
+path = "src/bin/main.rs"
 
 [dependencies]
 hidapi = "2.4.1"

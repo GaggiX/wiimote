@@ -16,6 +16,7 @@ use std::{
 };
 
 /// Abstraction over the Wiimote HID
+#[derive(Debug)]
 pub struct Wiimote {
     device: HidDevice,
     rumble: AtomicBool,
@@ -24,21 +25,26 @@ pub struct Wiimote {
 
 impl Wiimote {
     /// Finds and opens a wiimote HID device via hidapi.
-    pub fn find_hid() -> Option<HidDevice> {
+    pub fn find_hid() -> Vec<HidDevice> {
         let api = hidapi::HidApi::new().unwrap();
         let mut found = false;
+        let mut product_ids = Vec::new();
         for device in api.device_list() {
             debug!("dev: {:?}", device);
-            if (device.vendor_id(), device.product_id()) == (HID_VENDOR, HID_PRODUCT) {
+            if device.vendor_id() == HID_VENDOR {
                 info!("wiimote found");
+                product_ids.push(device.product_id());
                 found = true;
             }
         }
         if !found {
-            return None;
+            return Vec::new();
         }
-        let device = api.open(HID_VENDOR, HID_PRODUCT).unwrap();
-        Some(device)
+        let mut devices = Vec::new();
+        for product_id in product_ids {
+            devices.push(api.open(HID_VENDOR, product_id).unwrap());
+        }
+        devices
     }
     /// Creates wiimote abstraction over a HidDevice (which should be a wiimote)
     pub fn from_device(device: HidDevice) -> Self {
@@ -49,8 +55,11 @@ impl Wiimote {
         }
     }
     /// Finds and opens a wiimote.
-    pub fn open() -> Self {
-        Self::from_device(Self::find_hid().expect("no wiimote found"))
+    pub fn open() -> Vec<Self> {
+        Self::find_hid()
+            .into_iter()
+            .map(Self::from_device)
+            .collect()
     }
 }
 
