@@ -33,7 +33,7 @@ impl Wiimote {
             debug!("dev: {:?}", device);
             if device.vendor_id() == HID_VENDOR {
                 info!("wiimote found");
-                product_ids.push(device.product_id());
+                product_ids.push((device.product_id(), device.serial_number().unwrap()));
                 found = true;
             }
         }
@@ -42,7 +42,10 @@ impl Wiimote {
         }
         let mut devices = Vec::new();
         for product_id in product_ids {
-            devices.push(api.open(HID_VENDOR, product_id).unwrap());
+            devices.push(
+                api.open_serial(HID_VENDOR, product_id.0, product_id.1)
+                    .unwrap(),
+            );
         }
         devices
     }
